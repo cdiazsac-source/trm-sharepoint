@@ -38,27 +38,28 @@
 
 <body>
 
-<div class="card">
-  <h3>TRM Hoy</h3>
-  <div class="valor" id="trm">Cargando...</div>
-  <div class="fuente">Fuente: ExchangeRate API</div>
-</div>
+  <div class="card">
+    <h3>TRM Hoy</h3>
+    <div class="valor" id="trm">Cargando...</div>
+    <div class="fuente">Fuente: ExchangeRate API</div>
+  </div>
 
-<script>
-  fetch("https://curly-violet-2d33.cdiaz-sac.workers.dev/")
-    .then(response => response.json())
-    .then(data => {
-      if (data.trm) {
-        document.getElementById("trm").innerText = "$ " + data.trm;
-      } else {
-        document.getElementById("trm").innerText = "Error al obtener TRM";
-      }
-    })
-    .catch(error => {
-      document.getElementById("trm").innerText = "Error de conexión";
-    });
-</script>
+  <script>
+    fetch("https://curly-violet-2d33.cdiaz-sac.workers.dev/")
+      .then(response => response.json())
+      .then(data => {
+        if (data.trm) {
+          document.getElementById("trm").innerText = "$ " + data.trm;
+        } else {
+          document.getElementById("trm").innerText = "Error al obtener TRM";
+        }
+      })
+      .catch(error => {
+        document.getElementById("trm").innerText = "Error de conexión";
+      });
+  </script>
 
 </body>
 </html>
+
 
