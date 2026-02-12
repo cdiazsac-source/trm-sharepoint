@@ -3,20 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: transparent; display: flex; justify-content: center; }
-    .container { display: flex; gap: 10px; padding: 10px; }
-    .box {
-      background-color: #00334e; /* El azul oscuro de tu imagen */
-      color: white;
-      padding: 10px 20px;
-      border-radius: 4px;
-      text-align: center;
-      min-width: 150px;
-      border: 1px solid #004a70;
+    /* Estilos base */
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      margin: 0; 
+      background: transparent; 
+      display: flex; 
+      justify-content: center;
+      padding: 5px;
     }
-    .label { font-size: 11px; text-transform: uppercase; opacity: 0.8; margin-bottom: 3px; }
-    .value { font-size: 24px; font-weight: bold; }
-    .status { font-size: 9px; margin-top: 5px; color: #00d1ff; }
+
+    /* Contenedor que cambia de horizontal a vertical si no hay espacio */
+    .container { 
+      display: flex; 
+      flex-wrap: wrap; /* Esto permite que el segundo cuadro baje si no cabe */
+      gap: 10px; 
+      justify-content: center;
+      width: 100%;
+    }
+
+    .box {
+      background-color: #1a3a5a; /* Azul profesional */
+      color: white;
+      padding: 12px 10px;
+      border-radius: 8px;
+      text-align: center;
+      flex: 1; /* Hace que los cuadros crezcan para llenar el espacio */
+      min-width: 140px; /* Ancho mínimo antes de saltar de línea */
+      max-width: 200px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .label { 
+      font-size: 10px; 
+      text-transform: uppercase; 
+      letter-spacing: 1px;
+      margin-bottom: 4px; 
+      color: #a0aec0;
+    }
+
+    .value { 
+      font-size: 22px; /* Un poco más pequeño para que no se corte */
+      font-weight: bold; 
+    }
+
+    .status { 
+      font-size: 9px; 
+      margin-top: 6px; 
+      color: #4fd1c5; 
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -41,19 +78,6 @@
         .then(r => r.json())
         .then(data => {
           if(data.cierre) {
-            const f = (n) => parseFloat(n).toLocaleString('es-CO');
+            const f = (n) => parseFloat(n).toLocaleString('es-CO', { minimumFractionDigits: 2 });
             document.getElementById('cierre').innerText = f(data.cierre);
-            document.getElementById('promedio').innerText = f(data.promedio);
-            document.getElementById('hora').innerText = "Actualizado: " + data.fecha;
-          } else {
-            document.getElementById('hora').innerText = "Error de datos";
-          }
-        })
-        .catch(e => { document.getElementById('hora').innerText = "Error de conexión"; });
-    }
-
-    getData(); 
-    setInterval(getData, 60000); // Se actualiza solo cada minuto
-  </script>
-</body>
-</html>
+            document.getElementById('promedio').innerText = f
