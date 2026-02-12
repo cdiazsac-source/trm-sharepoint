@@ -4,75 +4,73 @@
   <meta charset="UTF-8">
   <style>
     body { 
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       margin: 0; background: transparent; 
       display: flex; justify-content: center;
       padding: 10px 0;
     }
     .container { 
       display: flex; flex-direction: column; 
-      gap: 15px; width: 100%; max-width: 260px;
+      gap: 12px; width: 100%; max-width: 260px;
     }
     .box {
-      background: #0a192f; /* Azul muy oscuro profesional */
-      color: white; padding: 18px; border-radius: 12px;
-      text-align: center; border: 1px solid #112240;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      background: #002d4a; /* Azul institucional BanRep */
+      color: white; padding: 15px; border-radius: 10px;
+      text-align: center; border: 1px solid #004571;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
       position: relative;
     }
-    /* Indicador visual de estatus */
-    .box::after {
-      content: ""; position: absolute; top: 10px; right: 10px;
-      width: 6px; height: 6px; background: #64ffda; border-radius: 50%;
-      box-shadow: 0 0 5px #64ffda;
-    }
     .label { 
-      font-size: 11px; text-transform: uppercase; 
-      letter-spacing: 1.5px; color: #8892b0; font-weight: 600;
-      margin-bottom: 8px;
+      font-size: 10px; text-transform: uppercase; 
+      letter-spacing: 1.2px; color: #a1c8e2; font-weight: 700;
+      margin-bottom: 5px;
     }
     .value { 
-      font-size: 32px; font-weight: 800; color: #ccd6f6;
+      font-size: 30px; font-weight: 800; color: #ffffff;
       line-height: 1; margin-bottom: 5px;
     }
     .status { 
-      font-size: 10px; color: #64ffda; font-weight: 500;
+      font-size: 9px; color: #4caf50; font-weight: 600;
+      text-transform: uppercase;
+    }
+    .footer-info {
+      font-size: 9px; color: #8892b0; margin-top: 5px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- PROMEDIO ARRIBA -->
+    <!-- CAJA PRINCIPAL TRM -->
     <div class="box">
-      <div class="label">Dólar Promedio</div>
-      <div class="value" id="promedio">0.00</div>
-      <div class="status" id="hora">Sincronizando...</div>
+      <div class="label">TRM Oficial BanRep</div>
+      <div class="value" id="trm">...</div>
+      <div class="status" id="estado">● Vigente</div>
+      <div class="footer-info" id="vigencia">Cargando...</div>
     </div>
 
-    <!-- CIERRE ABAJO -->
-    <div class="box" style="background: #112240;">
-      <div class="label">Dólar Cierre</div>
-      <div class="value" id="cierre">0.00</div>
-      <div class="status">Mercado Spot Live</div>
+    <!-- CAJA DE ACTUALIZACIÓN -->
+    <div class="box" style="background: #001f33; padding: 10px;">
+      <div class="label" style="font-size: 8px;">Última verificación</div>
+      <div id="reloj" style="font-size: 14px; font-weight: 600;">...</div>
     </div>
   </div>
 
   <script>
-    function updateData() {
+    function updateTRM() {
       fetch("https://curly-violet-2d33.cdiaz-sac.workers.dev/")
         .then(r => r.json())
         .then(data => {
-          if(data.cierre) {
-            const format = (n) => parseFloat(n).toLocaleString('es-CO', { minimumFractionDigits: 2 });
-            document.getElementById('promedio').innerText = format(data.promedio);
-            document.getElementById('cierre').innerText = format(data.cierre);
-            document.getElementById('hora').innerText = "ACTUALIZADO: " + data.fecha;
+          if(data.trm) {
+            const val = parseFloat(data.trm).toLocaleString('es-CO', { minimumFractionDigits: 2 });
+            document.getElementById('trm').innerText = "$ " + val;
+            document.getElementById('vigencia').innerText = "Vigencia: " + data.fecha;
+            document.getElementById('reloj').innerText = data.actualizado;
           }
         })
-        .catch(() => { document.getElementById('hora').innerText = "RECONECTANDO..."; });
+        .catch(() => { document.getElementById('estado').innerText = "Reconectando..."; });
     }
-    updateData();
-    setInterval(updateData, 60000); // Actualiza cada minuto
+    updateTRM();
+    setInterval(updateTRM, 300000); // Verifica cambios cada 5 minutos
   </script>
 </body>
 </html>
