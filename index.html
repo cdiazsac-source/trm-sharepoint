@@ -3,66 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <style>
-    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background-color: transparent; display: flex; justify-content: center; gap: 10px; }
-    
-    .ticker-container { display: flex; gap: 15px; padding: 10px; }
-
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: transparent; display: flex; justify-content: center; }
+    .container { display: flex; gap: 10px; padding: 10px; }
     .box {
-      background-color: #1a3a5a; /* Azul oscuro similar a SET-FX */
+      background-color: #00334e; /* El azul oscuro de tu imagen */
       color: white;
-      padding: 15px 25px;
+      padding: 10px 20px;
       border-radius: 4px;
       text-align: center;
-      min-width: 180px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-      border: 1px solid #2c4e72;
+      min-width: 150px;
+      border: 1px solid #004a70;
     }
-
-    .label { font-size: 12px; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; color: #cbd5e0; }
-    .value { font-size: 28px; font-weight: bold; letter-spacing: 1px; }
-    .status { font-size: 10px; color: #81e6d9; margin-top: 5px; }
+    .label { font-size: 11px; text-transform: uppercase; opacity: 0.8; margin-bottom: 3px; }
+    .value { font-size: 24px; font-weight: bold; }
+    .status { font-size: 9px; margin-top: 5px; color: #00d1ff; }
   </style>
 </head>
 <body>
-
-  <div class="ticker-container">
+  <div class="container">
     <div class="box">
       <div class="label">Cierre</div>
-      <div class="value" id="cierre">0.00</div>
-      <div class="status">Real-time</div>
+      <div class="value" id="cierre">...</div>
+      <div class="status">Tiempo Real</div>
     </div>
-
     <div class="box">
       <div class="label">Promedio</div>
-      <div class="value" id="promedio">0.00</div>
-      <div id="reloj" style="font-size: 10px; color: #a0aec0; margin-top: 5px;">Actualizando...</div>
+      <div class="value" id="promedio">...</div>
+      <div class="status" id="hora">Cargando...</div>
     </div>
   </div>
 
   <script>
-    const workerUrl = "https://curly-violet-2d33.cdiaz-sac.workers.dev/";
+    const url = "https://curly-violet-2d33.cdiaz-sac.workers.dev/";
 
-    function actualizarTRM() {
-      fetch(workerUrl)
-        .then(res => res.json())
+    function getData() {
+      fetch(url)
+        .then(r => r.json())
         .then(data => {
           if(data.cierre) {
-            // Formatear números con puntos de miles
-            const format = (num) => parseFloat(num).toLocaleString('es-CO', { minimumFractionDigits: 2 });
-            
-            document.getElementById("cierre").innerText = format(data.cierre);
-            document.getElementById("promedio").innerText = format(data.promedio);
-            document.getElementById("reloj").innerText = "Actualizado: " + data.fecha;
+            const f = (n) => parseFloat(n).toLocaleString('es-CO');
+            document.getElementById('cierre').innerText = f(data.cierre);
+            document.getElementById('promedio').innerText = f(data.promedio);
+            document.getElementById('hora').innerText = "Actualizado: " + data.fecha;
+          } else {
+            document.getElementById('hora').innerText = "Error de datos";
           }
         })
-        .catch(err => console.error("Error:", err));
+        .catch(e => { document.getElementById('hora').innerText = "Error de conexión"; });
     }
 
-    // Actualizar inmediatamente al cargar
-    actualizarTRM();
-
-    // REFRESCAR CADA 60 SEGUNDOS (Tiempo Real simulación)
-    setInterval(actualizarTRM, 60000);
+    getData(); 
+    setInterval(getData, 60000); // Se actualiza solo cada minuto
   </script>
 </body>
 </html>
