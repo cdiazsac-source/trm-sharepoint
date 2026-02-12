@@ -2,96 +2,86 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { font-family: 'Segoe UI', sans-serif; margin: 0; background: transparent; display: flex; justify-content: center; padding: 10px 0; }
-    .container { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 280px; }
+    .container { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 260px; }
     
-    /* Caja de TRM */
+    /* Cuadro de Valor TRM */
     .card {
-      background: #06182c; color: white; padding: 20px; border-radius: 12px;
-      text-align: center; border: 1px solid #102a43; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+      background: #06182c; color: white; padding: 15px; border-radius: 12px;
+      text-align: center; border: 1px solid #102a43; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     }
-    .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #829ab1; font-weight: 700; margin-bottom: 8px; }
-    .value { font-size: 32px; font-weight: 800; color: #ffffff; margin-bottom: 5px; }
-    .info { font-size: 10px; color: #00f2fe; margin-bottom: 2px; }
+    .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #829ab1; font-weight: 700; }
+    .value { font-size: 28px; font-weight: 800; color: #ffffff; margin: 5px 0; }
+    .info { font-size: 10px; color: #00f2fe; }
 
-    /* Caja de Calculadora */
-    .calc-card {
+    /* Cuadro de Calculadora */
+    .calc-box {
       background: #0a192f; color: white; padding: 15px; border-radius: 12px;
-      border: 1px solid #102a43;
+      border: 1px solid #102a43; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
     .calc-title { font-size: 11px; font-weight: 700; color: #9fb3c8; text-transform: uppercase; margin-bottom: 10px; text-align: center; }
-    .input-group { margin-bottom: 10px; }
+    .input-group { margin-bottom: 8px; }
     .input-group label { display: block; font-size: 9px; color: #627d98; margin-bottom: 3px; text-transform: uppercase; }
     .input-group input {
       width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #1e293b;
-      background: #112240; color: white; font-size: 14px; box-sizing: border-box;
-      outline: none; transition: border 0.3s;
+      background: #112240; color: white; font-size: 14px; box-sizing: border-box; outline: none;
     }
     .input-group input:focus { border-color: #00f2fe; }
-    .sync-time { font-size: 8px; color: #627d98; text-align: center; margin-top: 10px; }
+    .footer-text { font-size: 8px; color: #627d98; text-align: center; margin-top: 8px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- VALOR TRM -->
     <div class="card">
       <div class="label">TRM Hoy Oficial</div>
-      <div class="value" id="trm-display">$ 0.00</div>
-      <div class="info" id="fecha-display">Cargando...</div>
+      <div class="value" id="trm-display">$ 3.671,01</div>
+      <div class="info" id="fecha-display">Sincronizado</div>
     </div>
 
-    <!-- CALCULADORA -->
-    <div class="calc-card">
-      <div class="calc-title">Calculadora de Cambio</div>
+    <div class="calc-box">
+      <div class="calc-title">Calculadora USD / COP</div>
       <div class="input-group">
         <label>Dólares (USD)</label>
-        <input type="number" id="usd-input" placeholder="0.00" oninput="convertir('usd')">
+        <input type="number" id="usd" placeholder="0.00" oninput="convertir('usd')">
       </div>
       <div class="input-group">
         <label>Pesos (COP)</label>
-        <input type="text" id="cop-input" placeholder="0.00" oninput="convertir('cop')">
+        <input type="text" id="cop" placeholder="0" oninput="convertir('cop')">
       </div>
-      <div class="sync-time">Sincronizado: <span id="hora-display">--:--</span></div>
+      <div class="footer-text">Verificado: <span id="hora">--:--</span></div>
     </div>
   </div>
 
   <script>
-    let trmGlobal = 0;
+    let trmGlobal = 3671.01;
 
-    function formatCurrency(val) {
-      return new Intl.NumberFormat('es-CO').format(val);
-    }
+    function format(n) { return new Intl.NumberFormat('es-CO').format(n); }
 
     function update() {
       fetch("https://curly-violet-2d33.cdiaz-sac.workers.dev/")
         .then(r => r.json())
         .then(data => {
-          trmGlobal = data.trm;
-          document.getElementById('trm-display').innerText = "$ " + formatCurrency(data.trm);
-          document.getElementById('fecha-display').innerText = "Vigencia: " + data.fecha;
-          document.getElementById('hora-display').innerText = data.hora;
+          if(data.trm) {
+            trmGlobal = parseFloat(data.trm);
+            document.getElementById('trm-display').innerText = "$ " + format(trmGlobal);
+            document.getElementById('fecha-display').innerText = "Vigencia: " + data.fecha;
+            document.getElementById('hora').innerText = data.hora;
+          }
         });
     }
 
     function convertir(tipo) {
-      const usdIn = document.getElementById('usd-input');
-      const copIn = document.getElementById('cop-input');
-
+      const usdIn = document.getElementById('usd');
+      const copIn = document.getElementById('cop');
       if (tipo === 'usd') {
-        const resultado = usdIn.value * trmGlobal;
-        copIn.value = resultado > 0 ? formatCurrency(resultado.toFixed(0)) : "";
+        copIn.value = usdIn.value > 0 ? format(Math.round(usdIn.value * trmGlobal)) : "";
       } else {
-        // Limpiar puntos para el cálculo de pesos a dólares
-        const copValue = copIn.value.replace(/\./g, '').replace(/,/g, '.');
-        const resultado = copValue / trmGlobal;
-        usdIn.value = resultado > 0 ? resultado.toFixed(2) : "";
+        const copPuro = copIn.value.replace(/\./g, '').replace(/,/g, '.');
+        usdIn.value = copPuro > 0 ? (copPuro / trmGlobal).toFixed(2) : "";
       }
     }
-
     update();
-    setInterval(update, 300000);
   </script>
 </body>
 </html>
