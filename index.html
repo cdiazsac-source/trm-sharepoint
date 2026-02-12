@@ -3,70 +3,70 @@
 <head>
   <meta charset="UTF-8">
   <style>
-    /* Estilos base */
     body { 
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
       margin: 0; 
       background: transparent; 
       display: flex; 
       justify-content: center;
-      padding: 5px;
+      padding: 10px 0;
     }
 
-    /* Contenedor que cambia de horizontal a vertical si no hay espacio */
+    /* Forzamos que los cuadros estén uno debajo del otro */
     .container { 
       display: flex; 
-      flex-wrap: wrap; /* Esto permite que el segundo cuadro baje si no cabe */
-      gap: 10px; 
-      justify-content: center;
-      width: 100%;
+      flex-direction: column; 
+      gap: 12px; 
+      width: 90%; /* Ajuste para que no toque los bordes */
+      max-width: 250px;
     }
 
     .box {
-      background-color: #1a3a5a; /* Azul profesional */
+      background-color: #1a3a5a; 
       color: white;
-      padding: 12px 10px;
+      padding: 12px;
       border-radius: 8px;
       text-align: center;
-      flex: 1; /* Hace que los cuadros crezcan para llenar el espacio */
-      min-width: 140px; /* Ancho mínimo antes de saltar de línea */
-      max-width: 200px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
       border: 1px solid rgba(255,255,255,0.1);
     }
 
     .label { 
-      font-size: 10px; 
+      font-size: 11px; 
       text-transform: uppercase; 
-      letter-spacing: 1px;
+      font-weight: 600;
+      color: #cbd5e0;
       margin-bottom: 4px; 
-      color: #a0aec0;
     }
 
     .value { 
-      font-size: 22px; /* Un poco más pequeño para que no se corte */
+      font-size: 26px; 
       font-weight: bold; 
+      color: #ffffff;
     }
 
     .status { 
-      font-size: 9px; 
+      font-size: 10px; 
       margin-top: 6px; 
       color: #4fd1c5; 
-      font-style: italic;
     }
   </style>
 </head>
 <body>
+
   <div class="container">
-    <div class="box">
-      <div class="label">Cierre</div>
-      <div class="value" id="cierre">...</div>
-      <div class="status">Tiempo Real</div>
-    </div>
+    <!-- PROMEDIO ARRIBA -->
     <div class="box">
       <div class="label">Promedio</div>
       <div class="value" id="promedio">...</div>
       <div class="status" id="hora">Cargando...</div>
+    </div>
+
+    <!-- CIERRE ABAJO -->
+    <div class="box">
+      <div class="label">Cierre</div>
+      <div class="value" id="cierre">...</div>
+      <div class="status">Tiempo Real</div>
     </div>
   </div>
 
@@ -79,5 +79,16 @@
         .then(data => {
           if(data.cierre) {
             const f = (n) => parseFloat(n).toLocaleString('es-CO', { minimumFractionDigits: 2 });
+            document.getElementById('promedio').innerText = f(data.promedio);
             document.getElementById('cierre').innerText = f(data.cierre);
-            document.getElementById('promedio').innerText = f
+            document.getElementById('hora').innerText = "Actualizado: " + data.fecha;
+          }
+        })
+        .catch(e => { console.log("Error al conectar"); });
+    }
+
+    getData(); 
+    setInterval(getData, 60000); // Actualiza cada minuto
+  </script>
+</body>
+</html>
