@@ -4,21 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    :root { --accent: #00f2fe; --bg: #06182c; }
+    :root { --accent: #00f2fe; --bg: #06182c; --warning: #ffab00; }
     body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: transparent; display: flex; justify-content: center; padding: 10px; }
     .container { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 10px; }
-    .card { background: var(--bg); color: white; padding: 20px; border-radius: 15px; text-align: center; border: 1px solid #102a43; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+    .card { background: var(--bg); color: white; padding: 22px; border-radius: 15px; text-align: center; border: 1px solid #102a43; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
     .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #829ab1; font-weight: 700; margin-bottom: 5px; }
     .value { font-size: 36px; font-weight: 800; color: #ffffff; margin: 5px 0; }
     .vigencia { font-size: 11px; color: var(--accent); font-weight: 600; }
     .calc-box { background: #0a192f; padding: 18px; border-radius: 15px; border: 1px solid #102a43; color: white; }
-    .input-group { margin-bottom: 12px; }
+    .input-group { margin-bottom: 12px; text-align: left; }
     .input-group label { display: block; font-size: 9px; color: #627d98; margin-bottom: 4px; text-transform: uppercase; font-weight: 700; }
-    .input-group input { 
-      width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; 
-      background: #112240; color: white; font-size: 16px; box-sizing: border-box; outline: none; 
-    }
-    .input-group input:focus { border-color: var(--accent); }
+    input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; background: #112240; color: white; font-size: 16px; box-sizing: border-box; outline: none; }
     .footer { font-size: 9px; color: #627d98; text-align: center; margin-top: 10px; border-top: 1px solid #102a43; padding-top: 8px; line-height: 1.4; }
   </style>
 </head>
@@ -50,50 +46,52 @@
   <script>
     let trmGlobal = 0;
     const WORKER_URL = "https://curly-violet-2d33.cdiaz-sac.workers.dev/";
+    const nf = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-    // Formato moneda Colombia: 2 decimales siempre
-    const formatter = new Intl.NumberFormat('es-CO', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-
-    async function fetchData() {
+    async function update() {
       try {
-        // El "?cb=" + Date.now() rompe el caché del navegador para que no se congele
         const response = await fetch(WORKER_URL + "?cb=" + Date.now());
         const data = await response.json();
         
         if(data.trm) {
           trmGlobal = parseFloat(data.trm);
-          document.getElementById('trm-display').innerText = "$ " + formatter.format(trmGlobal);
-          document.getElementById('fecha-display').innerText = "Vigencia: " + data.fecha;
+          const display = document.getElementById('trm-display');
+          const fechaDisp = document.getElementById('fecha-display');
+          
+          display.innerText = "$ " + nf.format(trmGlobal);
+          fechaDisp.innerText = "Vigencia: " + data.fecha;
+
+          // Alerta visual si el dato es de un día anterior (Pendiente de actualización oficial)
+          const hoyISO = new Date().toISOString().split('T')[0];
+          if(data.fecha < hoyISO) {
+            fechaDisp.style.color = "#ffab00"; // Naranja (Aviso)
+          } else {
+            fechaDisp.style.color = "#00f2fe"; // Cian (Todo OK)
+          }
+
           document.getElementById('fuente').innerText = data.fuente;
           document.getElementById('hora').innerText = data.hora;
         }
       } catch (e) {
-        console.log("Error de conexión");
+        document.getElementById('fecha-display').innerText = "Reintentando conexión...";
       }
     }
 
     function convertir(tipo) {
-      if(trmGlobal === 0) return;
-      const usdIn = document.getElementById('usd');
-      const copIn = document.getElementById('cop');
-      
-      if (tipo === 'usd') {
-        let val = parseFloat(usdIn.value);
-        copIn.value = val > 0 ? formatter.format(val * trmGlobal) : "";
+      if(!trmGlobal) return;
+      const u = document.getElementById('usd');
+      const c = document.getElementById('cop');
+      if(tipo === 'usd') {
+        let v = parseFloat(u.value);
+        c.value = v > 0 ? nf.format(v * trmGlobal) : "";
       } else {
-        // Limpiar puntos de miles para poder calcular
-        let valPuro = copIn.value.replace(/\./g, '').replace(/,/g, '.');
-        usdIn.value = valPuro > 0 ? (parseFloat(valPuro) / trmGlobal).toFixed(2) : "";
+        let p = c.value.replace(/\./g, '').replace(/,/g, '.');
+        u.value = p > 0 ? (parseFloat(p) / trmGlobal).toFixed(2) : "";
       }
     }
 
-    // Ejecutar al cargar
-    fetchData();
-    // Auto-actualizar cada 30 minutos para evitar que se quede congelado
-    setInterval(fetchData, 1800000);
+    update();
+    setInterval(update, 1800000);
   </script>
 </body>
 </html>
