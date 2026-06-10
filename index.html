@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    :root { --accent: #00f2fe; --bg: #06182c; --warning: #ffab00; }
-    body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: transparent; display: flex; justify-content: center; padding: 10px; }
+    :root { --accent: #00f2fe; --bg: #06182c; }
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; background: transparent; display: flex; justify-content: center; padding: 10px; }
     .container { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 10px; }
     .card { background: var(--bg); color: white; padding: 22px; border-radius: 15px; text-align: center; border: 1px solid #102a43; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
     .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #829ab1; font-weight: 700; margin-bottom: 5px; }
@@ -19,14 +18,12 @@
   </style>
 </head>
 <body>
-
   <div class="container">
     <div class="card">
-      <div class="label">TRM Oficial Colombia</div>
+      <div class="label">TRM OFICIAL COLOMBIA</div>
       <div id="trm-display" class="value">$ 0,00</div>
       <div id="fecha-display" class="vigencia">Sincronizando...</div>
     </div>
-
     <div class="calc-box">
       <div class="input-group">
         <label>Dólares (USD)</label>
@@ -50,31 +47,16 @@
 
     async function update() {
       try {
-        const response = await fetch(WORKER_URL + "?cb=" + Date.now());
+        const response = await fetch(WORKER_URL + "?v=" + Date.now());
         const data = await response.json();
-        
         if(data.trm) {
           trmGlobal = parseFloat(data.trm);
-          const display = document.getElementById('trm-display');
-          const fechaDisp = document.getElementById('fecha-display');
-          
-          display.innerText = "$ " + nf.format(trmGlobal);
-          fechaDisp.innerText = "Vigencia: " + data.fecha;
-
-          // Alerta visual si el dato es de un día anterior (Pendiente de actualización oficial)
-          const hoyISO = new Date().toISOString().split('T')[0];
-          if(data.fecha < hoyISO) {
-            fechaDisp.style.color = "#ffab00"; // Naranja (Aviso)
-          } else {
-            fechaDisp.style.color = "#00f2fe"; // Cian (Todo OK)
-          }
-
+          document.getElementById('trm-display').innerText = "$ " + nf.format(trmGlobal);
+          document.getElementById('fecha-display').innerText = "Vigencia: " + data.fecha;
           document.getElementById('fuente').innerText = data.fuente;
           document.getElementById('hora').innerText = data.hora;
         }
-      } catch (e) {
-        document.getElementById('fecha-display').innerText = "Reintentando conexión...";
-      }
+      } catch (e) { console.error(e); }
     }
 
     function convertir(tipo) {
@@ -82,14 +64,12 @@
       const u = document.getElementById('usd');
       const c = document.getElementById('cop');
       if(tipo === 'usd') {
-        let v = parseFloat(u.value);
-        c.value = v > 0 ? nf.format(v * trmGlobal) : "";
+        c.value = u.value > 0 ? nf.format(u.value * trmGlobal) : "";
       } else {
         let p = c.value.replace(/\./g, '').replace(/,/g, '.');
         u.value = p > 0 ? (parseFloat(p) / trmGlobal).toFixed(2) : "";
       }
     }
-
     update();
     setInterval(update, 1800000);
   </script>
