@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Widget TRM Colombia</title>
-    <!-- Desactivar caché a nivel de metaetiquetas HTML -->
+    <title>Widget TRM Colombia - SAC Tecnología</title>
+    
+    <!-- Metaetiquetas para forzar la no retención de caché en navegadores -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -27,7 +28,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 490px; /* Ajustado para el alto de tu iframe */
+            height: 490px; /* Ajustado al alto del contenedor iframe */
             box-sizing: border-box;
         }
 
@@ -43,7 +44,7 @@
         }
 
         h2 {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             margin: 0 0 5px 0;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -51,7 +52,7 @@
         }
 
         .trm-value {
-            font-size: 2.5rem;
+            font-size: 2.3rem;
             font-weight: bold;
             color: var(--accent-color);
             margin: 10px 0;
@@ -97,21 +98,16 @@
         input:focus {
             border-color: var(--accent-color);
         }
-
-        .loading {
-            color: var(--accent-color);
-            font-style: italic;
-        }
     </style>
 </head>
 <body>
 
     <div class="widget-card">
         <h2>TRM Oficial Colombia</h2>
-        <div id="trm-display" class="trm-value class-loading">Cargando...</div>
-        <div id="date-display" class="trm-date">Verificando fecha vigente...</div>
+        <div id="trm-display" class="trm-value">Cargando TRM...</div>
+        <div id="date-display" class="trm-date">Verificando fecha...</div>
 
-        <!-- Calculadora Dual -->
+        <!-- Calculadora Dual Instantánea -->
         <div class="calc-container">
             <div class="calc-row">
                 <label for="usd-input">Dólares (USD)</label>
@@ -128,7 +124,7 @@
         let currentTrm = 0;
         const workerUrl = "https://curly-violet-2d33.cdiaz-sac.workers.dev/";
 
-        // Formateador regional colombiano ($ 3.513,54)
+        // Formato obligatorio regional ($ 3.513,54)
         const formatCOP = (value) => {
             return new Intl.NumberFormat('es-CO', {
                 style: 'currency',
@@ -138,34 +134,34 @@
             }).format(value);
         };
 
-        // Forzar destrucción de caché local agregando timestamp dinámico al fetch
-        function fetchTrmData() {
-            const cacheBuster = new Date().getTime();
+        // Función encargada de pedir los datos al Worker destruyendo la caché en tránsito
+        function cargarTrmVigente() {
+            const cacheBuster = new Date().getTime(); // Genera un ID único por milisegundo
             
             fetch(`${workerUrl}?_cb=${cacheBuster}`)
                 .then(response => {
-                    if (!response.ok) throw new Error("Error en servidor");
+                    if (!response.ok) throw new Error("Error de red");
                     return response.json();
                 })
                 .then(data => {
-                    // Esperamos que el Worker nos retorne un JSON estructurado como: { valor: 3950.45, vigencia: "2026-07-03" }
                     currentTrm = parseFloat(data.valor);
                     
+                    // Inyección de datos en la interfaz visual
                     document.getElementById('trm-display').innerText = formatCOP(currentTrm);
                     document.getElementById('date-display').innerText = `Vigente para: ${data.vigencia}`;
                     
-                    // Activar inputs de la calculadora
+                    // Habilitar la calculadora una vez carguen los datos
                     document.getElementById('usd-input').disabled = false;
                     document.getElementById('cop-input').disabled = false;
                 })
                 .catch(err => {
-                    console.error(err);
+                    console.error("Error al sincronizar widget:", err);
                     document.getElementById('trm-display').innerText = "$ ----,--";
-                    document.getElementById('date-display').innerText = "Error al conectar con Superfinanciera";
+                    document.getElementById('date-display').innerText = "Servidor temporalmente no disponible";
                 });
         }
 
-        // Lógica de la calculadora dual instantánea
+        // Lógica matemática de la Calculadora Dual Instantánea
         const usdInput = document.getElementById('usd-input');
         const copInput = document.getElementById('cop-input');
 
@@ -179,9 +175,8 @@
         });
 
         copInput.addEventListener('input', (e) => {
-            // Elimina puntos de miles viejos para poder procesar la matemática adecuadamente
-            let cleanVal = e.target.value.replace(/\./g, '').replace(/,/g, '.');
-            const copVal = parseFloat(cleanVal);
+            let limpiaPuntos = e.target.value.replace(/\./g, '').replace(/,/g, '.');
+            const copVal = parseFloat(limpiaPuntos);
             
             if (!isNaN(copVal) && currentTrm > 0) {
                 usdInput.value = (copVal / currentTrm).toFixed(2);
@@ -190,11 +185,11 @@
             }
         });
 
-        // Carga inicial
-        fetchTrmData();
+        // Ejecución inicial de carga
+        cargarTrmVigente();
 
-        // Auto-refresco cada 30 minutos sin recargar la página completa
-        setInterval(fetchTrmData, 30 * 60 * 1000);
+        // Refresco automático interno en segundo plano cada 30 minutos
+        setInterval(cargarTrmVigente, 30 * 60 * 1000);
     </script>
 </body>
 </html>
