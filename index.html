@@ -8,19 +8,19 @@
     .container { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 10px; }
     .card { background: var(--bg); color: white; padding: 22px; border-radius: 15px; text-align: center; border: 1px solid #102a43; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
     .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #829ab1; font-weight: 700; margin-bottom: 5px; }
-    .value { font-size: 36px; font-weight: 800; color: #ffffff; margin: 5px 0; }
+    .value { font-size: 34px; font-weight: 800; color: #ffffff; margin: 5px 0; }
     .vigencia { font-size: 11px; color: var(--accent); font-weight: 600; }
     .calc { background: #0a192f; padding: 18px; border-radius: 15px; border: 1px solid #102a43; color: white; }
     input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; background: #112240; color: white; font-size: 16px; box-sizing: border-box; outline: none; margin-top: 5px; }
-    .footer { font-size: 9px; color: #627d98; text-align: center; margin-top: 10px; line-height: 1.4; }
+    .footer { font-size: 9px; color: #627d98; text-align: center; margin-top: 10px; line-height: 1.4; border-top: 1px solid #102a43; padding-top: 8px; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="card">
       <div class="label">TRM OFICIAL COLOMBIA</div>
-      <div id="trm-display" class="value">$ 3.443,59</div>
-      <div id="fecha-display" class="vigencia">Vigencia: 2026-07-03</div>
+      <div id="trm-display" class="value">Cargando...</div>
+      <div id="fecha-display" class="vigencia">Sincronizando datos...</div>
     </div>
     <div class="calc">
       <label style="font-size: 9px; color: #627d98;">DÓLARES (USD)</label>
@@ -28,35 +28,45 @@
       <label style="font-size: 9px; color: #627d98; display:block; margin-top:10px;">PESOS (COP)</label>
       <input type="text" id="cop" oninput="convertir('cop')">
       <div class="footer">
-        Fuente: Superfinanciera (SFC)<br>Sincronizado: <span id="hora">09:18 a. m.</span>
+        Fuente: <span id="fuente">---</span><br>
+        Sincronizado: <span id="hora">--:--</span>
       </div>
     </div>
   </div>
 
   <script>
-    // Valor de hoy por si el internet falla
-    let trmGlobal = 3443.59;
+    let trmGlobal = 0;
     const nf = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-    // Función que recibe los datos (JSONP)
-    function procesarTRM(data) {
-      if (data && data.valor) {
-        trmGlobal = parseFloat(data.valor);
-        document.getElementById('trm-display').innerText = "$ " + nf.format(trmGlobal);
-        document.getElementById('fecha-display').innerText = "Vigencia: " + data.vigencia;
-        document.getElementById('hora').innerText = new Date().toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit', hour12: true});
+    async function update() {
+      // Usamos el motor financiero de ExchangeRate (CORS Friendly para SharePoint)
+      const url = "https://open.er-api.com/v6/latest/USD";
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data && data.rates && data.rates.COP) {
+          trmGlobal = data.rates.COP;
+          
+          // Actualizar Interfaz
+          document.getElementById('trm-display').innerText = "$ " + nf.format(trmGlobal);
+          
+          // La fecha de vigencia la tomamos del servidor financiero
+          const fechaServidor = new Date(data.time_last_update_utc).toLocaleDateString('es-CO');
+          document.getElementById('fecha-display').innerText = "Vigencia: " + fechaServidor;
+          
+          document.getElementById('fuente').innerText = "Mercado Financiero Intl";
+          document.getElementById('hora').innerText = new Date().toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit', hour12: true});
+        }
+      } catch (e) {
+        document.getElementById('trm-display').innerText = "Error";
+        document.getElementById('fecha-display').innerText = "Sin conexión a internet";
       }
     }
 
-    // Inyectamos el script que se salta todos los bloqueos de seguridad
-    function update() {
-      const script = document.createElement('script');
-      // Usamos un servicio espejo que soporta JSONP (callback)
-      script.src = "https://trm-colombia.vercel.app/api/trm/current?callback=procesarTRM&cb=" + Date.now();
-      document.body.appendChild(script);
-    }
-
     function convertir(tipo) {
+      if(!trmGlobal) return;
       const u = document.getElementById('usd'), c = document.getElementById('cop');
       if(tipo === 'usd') c.value = u.value > 0 ? nf.format(u.value * trmGlobal) : "";
       else {
@@ -65,9 +75,9 @@
       }
     }
 
-    // Ejecutar actualización
     update();
-    setInterval(update, 1800000);
+    // Se actualiza automáticamente cada 1 hora
+    setInterval(update, 3600000);
   </script>
 </body>
 </html>
