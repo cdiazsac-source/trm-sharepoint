@@ -10,75 +10,71 @@
     .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #829ab1; font-weight: 700; margin-bottom: 5px; }
     .value { font-size: 36px; font-weight: 800; color: #ffffff; margin: 5px 0; }
     .vigencia { font-size: 11px; color: var(--accent); font-weight: 600; }
-    .calc-box { background: #0a192f; padding: 18px; border-radius: 15px; border: 1px solid #102a43; color: white; }
-    .input-group { margin-bottom: 12px; text-align: left; }
-    .input-group label { display: block; font-size: 9px; color: #627d98; margin-bottom: 4px; text-transform: uppercase; font-weight: 700; }
-    input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; background: #112240; color: white; font-size: 16px; box-sizing: border-box; outline: none; }
-    .footer { font-size: 9px; color: #627d98; text-align: center; margin-top: 10px; border-top: 1px solid #102a43; padding-top: 8px; line-height: 1.4; }
+    .calc { background: #0a192f; padding: 18px; border-radius: 15px; border: 1px solid #102a43; color: white; }
+    input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; background: #112240; color: white; font-size: 16px; box-sizing: border-box; outline: none; margin-top: 5px; }
+    .footer { font-size: 9px; color: #627d98; text-align: center; margin-top: 10px; line-height: 1.4; }
   </style>
 </head>
 <body>
-
   <div class="container">
     <div class="card">
-      <div class="label">TRM Oficial Colombia</div>
+      <div class="label">TRM OFICIAL COLOMBIA</div>
       <div id="trm-display" class="value">$ 0,00</div>
       <div id="fecha-display" class="vigencia">Sincronizando...</div>
     </div>
-
-    <div class="calc-box">
-      <div class="input-group">
-        <label>Dólares (USD)</label>
-        <input type="number" id="usd" step="0.01" placeholder="0.00" oninput="convertir('usd')">
-      </div>
-      <div class="input-group">
-        <label>Pesos (COP)</label>
-        <input type="text" id="cop" placeholder="0,00" oninput="convertir('cop')">
-      </div>
+    <div class="calc">
+      <label style="font-size: 9px; color: #627d98;">DÓLARES (USD)</label>
+      <input type="number" id="usd" step="0.01" oninput="convertir('usd')">
+      <label style="font-size: 9px; color: #627d98; display:block; margin-top:10px;">PESOS (COP)</label>
+      <input type="text" id="cop" oninput="convertir('cop')">
       <div class="footer">
-        Fuente: <span id="fuente">---</span><br>
-        Sincronizado: <span id="hora">--:--</span>
+        Fuente: <span id="fuente">---</span> | Sincronizado: <span id="hora">--:--</span>
       </div>
     </div>
   </div>
-
   <script>
     let trmGlobal = 0;
-    const WORKER_URL = "https://curly-violet-2d33.cdiaz-sac.workers.dev/";
     const nf = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     async function update() {
-      try {
-        const response = await fetch(WORKER_URL + "?nocache=" + Date.now(), { cache: "no-store" });
-        const data = await response.json();
-        
-        if(data.trm) {
-          trmGlobal = parseFloat(data.trm);
-          document.getElementById('trm-display').innerText = "$ " + nf.format(trmGlobal);
-          document.getElementById('fecha-display').innerText = "Vigencia: " + data.fecha;
-          document.getElementById('fuente').innerText = data.fuente;
-          document.getElementById('hora').innerText = data.hora;
-        }
-      } catch (e) {
-        console.error("Error de red");
+      // Intentamos 3 fuentes directas desde el navegador del usuario
+      const fuentes = [
+        { url: "https://trm-colombia.vercel.app/api/trm/current", parse: d => ({trm: d.valor, fecha: d.vigencia, f: "SFC Directo"}) },
+        { url: "https://www.datos.gov.co/resource/m97w-rn6u.json?$limit=1&$order=vigenciadesde%20DESC", parse: d => ({trm: d[0].valor, fecha: d[0].vigenciadesde.split('T')[0], f: "Gov Directo"}) },
+        { url: "https://api.trmcolombia.com/v1/trm/current", parse: d => ({trm: d.data.value, fecha: d.data.validityFrom.split('T')[0], f: "Mirror Directo"}) }
+      ];
+
+      for (let s of fuentes) {
+        try {
+          const r = await fetch(s.url + (s.url.includes('?') ? '&' : '?') + 'cb=' + Date.now());
+          if (!r.ok) continue;
+          const data = await r.json();
+          const res = s.parse(data);
+          
+          if(res.trm) {
+            trmGlobal = parseFloat(res.trm);
+            document.getElementById('trm-display').innerText = "$ " + nf.format(trmGlobal);
+            document.getElementById('fecha-display').innerText = "Vigencia: " + res.fecha;
+            document.getElementById('fuente').innerText = res.f;
+            document.getElementById('hora').innerText = new Date().toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit', hour12: true});
+            return; // Éxito, salimos del bucle
+          }
+        } catch (e) { console.error("Fallo fuente"); }
       }
+      document.getElementById('fecha-display').innerText = "Error de conexión local";
     }
 
     function convertir(tipo) {
       if(!trmGlobal) return;
-      const u = document.getElementById('usd');
-      const c = document.getElementById('cop');
-      if(tipo === 'usd') {
-        let v = parseFloat(u.value);
-        c.value = v > 0 ? nf.format(v * trmGlobal) : "";
-      } else {
+      const u = document.getElementById('usd'), c = document.getElementById('cop');
+      if(tipo === 'usd') c.value = u.value > 0 ? nf.format(u.value * trmGlobal) : "";
+      else {
         let p = c.value.replace(/\./g, '').replace(/,/g, '.');
-        u.value = p > 0 ? (parseFloat(p) / trmGlobal).toFixed(2) : "";
+        u.value = p > 0 ? (p / trmGlobal).toFixed(2) : "";
       }
     }
-
     update();
-    setInterval(update, 1800000); // Actualiza cada 30 min
+    setInterval(update, 1800000);
   </script>
 </body>
 </html>
