@@ -1,83 +1,200 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <style>
-    :root { --accent: #00f2fe; --bg: #06182c; }
-    body { font-family: 'Segoe UI', sans-serif; margin: 0; background: transparent; display: flex; justify-content: center; padding: 10px; overflow: hidden; }
-    .container { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 10px; }
-    .card { background: var(--bg); color: white; padding: 22px; border-radius: 15px; text-align: center; border: 1px solid #102a43; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
-    .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #829ab1; font-weight: 700; margin-bottom: 5px; }
-    .value { font-size: 34px; font-weight: 800; color: #ffffff; margin: 5px 0; }
-    .vigencia { font-size: 11px; color: var(--accent); font-weight: 600; }
-    .calc { background: #0a192f; padding: 18px; border-radius: 15px; border: 1px solid #102a43; color: white; }
-    input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; background: #112240; color: white; font-size: 16px; box-sizing: border-box; outline: none; margin-top: 5px; }
-    .footer { font-size: 9px; color: #627d98; text-align: center; margin-top: 10px; line-height: 1.4; border-top: 1px solid #102a43; padding-top: 8px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget TRM Colombia</title>
+    <!-- Desactivar caché a nivel de metaetiquetas HTML -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <style>
+        :root {
+            --primary-color: #0A192F; /* Navy Blue */
+            --secondary-color: #172A45;
+            --accent-color: #64FFDA;
+            --text-main: #E6F1FF;
+            --text-muted: #8892B0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--primary-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 490px; /* Ajustado para el alto de tu iframe */
+            box-sizing: border-box;
+        }
+
+        .widget-card {
+            background-color: var(--secondary-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(2, 12, 27, 0.7);
+            padding: 25px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid rgba(100, 255, 218, 0.1);
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }
+
+        .trm-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin: 10px 0;
+        }
+
+        .trm-date {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .calc-container {
+            border-top: 1px solid rgba(136, 146, 176, 0.2);
+            padding-top: 20px;
+        }
+
+        .calc-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            width: 35%;
+            text-align: left;
+        }
+
+        input {
+            width: 60%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--text-muted);
+            background-color: var(--primary-color);
+            color: var(--text-main);
+            font-size: 1rem;
+            text-align: right;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .loading {
+            color: var(--accent-color);
+            font-style: italic;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="card">
-      <div class="label">TRM OFICIAL COLOMBIA</div>
-      <div id="trm-display" class="value">Cargando...</div>
-      <div id="fecha-display" class="vigencia">Sincronizando datos...</div>
+
+    <div class="widget-card">
+        <h2>TRM Oficial Colombia</h2>
+        <div id="trm-display" class="trm-value class-loading">Cargando...</div>
+        <div id="date-display" class="trm-date">Verificando fecha vigente...</div>
+
+        <!-- Calculadora Dual -->
+        <div class="calc-container">
+            <div class="calc-row">
+                <label for="usd-input">Dólares (USD)</label>
+                <input type="number" id="usd-input" placeholder="0.00" disabled>
+            </div>
+            <div class="calc-row">
+                <label for="cop-input">Pesos (COP)</label>
+                <input type="text" id="cop-input" placeholder="0" disabled>
+            </div>
+        </div>
     </div>
-    <div class="calc">
-      <label style="font-size: 9px; color: #627d98;">DÓLARES (USD)</label>
-      <input type="number" id="usd" step="0.01" oninput="convertir('usd')">
-      <label style="font-size: 9px; color: #627d98; display:block; margin-top:10px;">PESOS (COP)</label>
-      <input type="text" id="cop" oninput="convertir('cop')">
-      <div class="footer">
-        Fuente: <span id="fuente">---</span><br>
-        Sincronizado: <span id="hora">--:--</span>
-      </div>
-    </div>
-  </div>
 
-  <script>
-    let trmGlobal = 0;
-    const nf = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    <script>
+        let currentTrm = 0;
+        const workerUrl = "https://curly-violet-2d33.cdiaz-sac.workers.dev/";
 
-    async function update() {
-      // Usamos el motor financiero de ExchangeRate (CORS Friendly para SharePoint)
-      const url = "https://open.er-api.com/v6/latest/USD";
+        // Formateador regional colombiano ($ 3.513,54)
+        const formatCOP = (value) => {
+            return new Intl.NumberFormat('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(value);
+        };
 
-      try {
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        if (data && data.rates && data.rates.COP) {
-          trmGlobal = data.rates.COP;
-          
-          // Actualizar Interfaz
-          document.getElementById('trm-display').innerText = "$ " + nf.format(trmGlobal);
-          
-          // La fecha de vigencia la tomamos del servidor financiero
-          const fechaServidor = new Date(data.time_last_update_utc).toLocaleDateString('es-CO');
-          document.getElementById('fecha-display').innerText = "Vigencia: " + fechaServidor;
-          
-          document.getElementById('fuente').innerText = "Mercado Financiero Intl";
-          document.getElementById('hora').innerText = new Date().toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit', hour12: true});
+        // Forzar destrucción de caché local agregando timestamp dinámico al fetch
+        function fetchTrmData() {
+            const cacheBuster = new Date().getTime();
+            
+            fetch(`${workerUrl}?_cb=${cacheBuster}`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Error en servidor");
+                    return response.json();
+                })
+                .then(data => {
+                    // Esperamos que el Worker nos retorne un JSON estructurado como: { valor: 3950.45, vigencia: "2026-07-03" }
+                    currentTrm = parseFloat(data.valor);
+                    
+                    document.getElementById('trm-display').innerText = formatCOP(currentTrm);
+                    document.getElementById('date-display').innerText = `Vigente para: ${data.vigencia}`;
+                    
+                    // Activar inputs de la calculadora
+                    document.getElementById('usd-input').disabled = false;
+                    document.getElementById('cop-input').disabled = false;
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('trm-display').innerText = "$ ----,--";
+                    document.getElementById('date-display').innerText = "Error al conectar con Superfinanciera";
+                });
         }
-      } catch (e) {
-        document.getElementById('trm-display').innerText = "Error";
-        document.getElementById('fecha-display').innerText = "Sin conexión a internet";
-      }
-    }
 
-    function convertir(tipo) {
-      if(!trmGlobal) return;
-      const u = document.getElementById('usd'), c = document.getElementById('cop');
-      if(tipo === 'usd') c.value = u.value > 0 ? nf.format(u.value * trmGlobal) : "";
-      else {
-        let p = c.value.replace(/\./g, '').replace(/,/g, '.');
-        u.value = p > 0 ? (p / trmGlobal).toFixed(2) : "";
-      }
-    }
+        // Lógica de la calculadora dual instantánea
+        const usdInput = document.getElementById('usd-input');
+        const copInput = document.getElementById('cop-input');
 
-    update();
-    // Se actualiza automáticamente cada 1 hora
-    setInterval(update, 3600000);
-  </script>
+        usdInput.addEventListener('input', (e) => {
+            const usdVal = parseFloat(e.target.value);
+            if (!isNaN(usdVal) && currentTrm > 0) {
+                copInput.value = (usdVal * currentTrm).toLocaleString('es-CO', { maximumFractionDigits: 0 });
+            } else {
+                copInput.value = '';
+            }
+        });
+
+        copInput.addEventListener('input', (e) => {
+            // Elimina puntos de miles viejos para poder procesar la matemática adecuadamente
+            let cleanVal = e.target.value.replace(/\./g, '').replace(/,/g, '.');
+            const copVal = parseFloat(cleanVal);
+            
+            if (!isNaN(copVal) && currentTrm > 0) {
+                usdInput.value = (copVal / currentTrm).toFixed(2);
+            } else {
+                usdInput.value = '';
+            }
+        });
+
+        // Carga inicial
+        fetchTrmData();
+
+        // Auto-refresco cada 30 minutos sin recargar la página completa
+        setInterval(fetchTrmData, 30 * 60 * 1000);
+    </script>
 </body>
 </html>
