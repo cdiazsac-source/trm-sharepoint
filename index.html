@@ -2,18 +2,17 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     :root { --accent: #00f2fe; --bg: #06182c; }
     body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: transparent; display: flex; justify-content: center; padding: 10px; overflow: hidden; }
     .container { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 10px; }
     .card { background: var(--bg); color: white; padding: 22px; border-radius: 15px; text-align: center; border: 1px solid #102a43; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
-    .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #829ab1; font-weight: 700; }
-    .value { font-size: 36px; font-weight: 800; color: #ffffff; margin: 8px 0; }
+    .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #829ab1; font-weight: 700; margin-bottom: 5px; }
+    .value { font-size: 36px; font-weight: 800; color: #ffffff; margin: 5px 0; }
     .vigencia { font-size: 11px; color: var(--accent); font-weight: 600; }
     .calc { background: #0a192f; padding: 18px; border-radius: 15px; border: 1px solid #102a43; color: white; }
     input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; background: #112240; color: white; font-size: 16px; box-sizing: border-box; outline: none; margin-top: 5px; }
-    .footer { font-size: 9px; color: #627d98; text-align: center; margin-top: 10px; border-top: 1px solid #102a43; padding-top: 8px; }
+    .footer { font-size: 9px; color: #627d98; text-align: center; margin-top: 10px; line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -21,7 +20,7 @@
     <div class="card">
       <div class="label">TRM OFICIAL COLOMBIA</div>
       <div id="trm-display" class="value">$ 0,00</div>
-      <div id="fecha-display" class="vigencia">Buscando dato oficial...</div>
+      <div id="fecha-display" class="vigencia">Sincronizando...</div>
     </div>
     <div class="calc">
       <label style="font-size: 9px; color: #627d98;">DÓLARES (USD)</label>
@@ -29,56 +28,56 @@
       <label style="font-size: 9px; color: #627d98; display:block; margin-top:10px;">PESOS (COP)</label>
       <input type="text" id="cop" oninput="convertir('cop')">
       <div class="footer">
-        Fuente: <span id="fuente">Cargando...</span> | <span id="hora">--:--</span>
+        Estado: <span id="status">Buscando...</span><br>
+        Sincronizado: <span id="hora">--:--</span>
       </div>
     </div>
   </div>
 
   <script>
-    let trmGlobal = 0;
+    // Valor de respaldo HOY 17 de Julio (mientras el motor conecta)
+    let trmGlobal = 3221.41;
     const nf = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-    // Lista de fuentes que permiten conexión directa desde el navegador (CORS Friendly)
-    const fuentes = [
-      {
-        url: "https://trm-colombia.vercel.app/api/trm/current",
-        parse: (d) => ({ trm: d.valor, fecha: d.vigencia, f: "SFC Oficial (Mirror)" })
-      },
-      {
-        url: "https://www.datos.gov.co/resource/m97w-rn6u.json?$limit=1&$order=vigenciadesde%20DESC",
-        parse: (d) => ({ trm: d[0].valor, fecha: d[0].vigenciadesde.split('T')[0], f: "Gov Colombia" })
-      }
-    ];
-
     async function update() {
-      for (let s of fuentes) {
+      const status = document.getElementById('status');
+      
+      // Intentos en cascada: Directo -> Proxy 1 -> Proxy 2
+      const estrategias = [
+        { url: "https://trm-colombia.vercel.app/api/trm/current", proxy: "" },
+        { url: "https://trm-colombia.vercel.app/api/trm/current", proxy: "https://corsproxy.io/?" },
+        { url: "https://www.datos.gov.co/resource/m97w-rn6u.json?$limit=1&$order=vigenciadesde%20DESC", proxy: "https://corsproxy.io/?" }
+      ];
+
+      for (let e of estrategias) {
         try {
-          const response = await fetch(s.url + (s.url.includes('?') ? '&' : '?') + 'cache=' + Date.now());
-          if (!response.ok) continue;
-          const data = await response.json();
-          const result = s.parse(data);
+          const res = await fetch(e.proxy + e.url + (e.url.includes('?') ? '&' : '?') + 'cb=' + Date.now());
+          if (!res.ok) continue;
+          const data = await res.json();
           
-          if (result.trm > 0) {
-            trmGlobal = parseFloat(result.trm);
-            document.getElementById('trm-display').innerText = "$ " + nf.format(trmGlobal);
-            document.getElementById('fecha-display').innerText = "Vigencia: " + result.fecha;
-            document.getElementById('fuente').innerText = result.f;
-            document.getElementById('hora').innerText = new Date().toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit', hour12: true});
-            return; // Detenerse al encontrar el primer éxito
+          let valor = data.valor || (data[0] ? data[0].valor : null);
+          let fecha = data.vigencia || (data[0] ? data[0].vigenciadesde.split('T')[0] : null);
+
+          if (valor) {
+            trmGlobal = parseFloat(valor);
+            render(trmGlobal, fecha, "SFC Online");
+            return;
           }
-        } catch (e) {
-          console.error("Fallo en fuente:", s.url);
-        }
+        } catch (err) { console.log("Fallo estrategia"); }
       }
-      // ÚLTIMO RECURSO: Si todo falla, mostrar el último valor que confirmaste (3233.91)
-      trmGlobal = 3233.91;
-      document.getElementById('trm-display').innerText = "$ " + nf.format(trmGlobal);
-      document.getElementById('fecha-display').innerText = "Vigencia: 2026-07-16 (Sincronizado)";
-      document.getElementById('fuente').innerText = "SFC (Modo Offline)";
+      
+      // Si todo falla, mostrar el respaldo de hoy
+      render(3221.41, "2026-07-17", "SFC (Respaldo Local)");
+    }
+
+    function render(trm, fecha, fuente) {
+      document.getElementById('trm-display').innerText = "$ " + nf.format(trm);
+      document.getElementById('fecha-display').innerText = "Vigencia: " + fecha;
+      document.getElementById('status').innerText = fuente;
+      document.getElementById('hora').innerText = new Date().toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit', hour12: true});
     }
 
     function convertir(tipo) {
-      if(!trmGlobal) return;
       const u = document.getElementById('usd'), c = document.getElementById('cop');
       if(tipo === 'usd') c.value = u.value > 0 ? nf.format(u.value * trmGlobal) : "";
       else {
