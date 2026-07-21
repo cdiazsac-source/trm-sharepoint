@@ -4,62 +4,50 @@
   <meta charset="UTF-8">
   <style>
     :root { --accent: #00f2fe; --bg: #06182c; }
-    body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: transparent; display: flex; justify-content: center; padding: 10px; overflow: hidden; }
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; background: transparent; display: flex; justify-content: center; padding: 10px; overflow: hidden; }
     .container { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 10px; }
     .card { background: var(--bg); color: white; padding: 22px; border-radius: 15px; text-align: center; border: 1px solid #102a43; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
-    .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #829ab1; font-weight: 700; margin-bottom: 5px; }
-    .value { font-size: 34px; font-weight: 800; color: #ffffff; margin: 5px 0; }
+    .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #829ab1; font-weight: 700; }
+    .value { font-size: 36px; font-weight: 800; color: #ffffff; margin: 8px 0; }
     .vigencia { font-size: 11px; color: var(--accent); font-weight: 600; }
     .calc { background: #0a192f; padding: 18px; border-radius: 15px; border: 1px solid #102a43; color: white; }
     input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; background: #112240; color: white; font-size: 16px; box-sizing: border-box; outline: none; margin-top: 5px; }
-    .footer { font-size: 9px; color: #627d98; text-align: center; margin-top: 10px; line-height: 1.4; border-top: 1px solid #102a43; padding-top: 8px; }
+    .footer { font-size: 9px; color: #627d98; text-align: center; margin-top: 10px; border-top: 1px solid #102a43; padding-top: 10px; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="card">
       <div class="label">TRM OFICIAL COLOMBIA</div>
-      <div id="trm-display" class="value">$ 3.262,58</div>
-      <div id="fecha-display" class="vigencia">Vigencia: 2026-07-21</div>
+      <div id="trm-display" class="value">$ 0,00</div>
+      <div id="fecha-display" class="vigencia">Sincronizando...</div>
     </div>
     <div class="calc">
       <input type="number" id="usd" placeholder="Dólares (USD)" oninput="convertir('usd')">
       <input type="text" id="cop" placeholder="Pesos (COP)" oninput="convertir('cop')">
-      <div class="footer">
-        Estado: <span id="fuente">Sincronizado</span><br>
-        Sincronizado: <span id="hora">09:30 a. m.</span>
-      </div>
+      <div class="footer">Fuente: SFC Oficial (Vía Google) | <span id="hora">--:--</span></div>
     </div>
   </div>
 
   <script>
-    // Valor inicial (Dato de hoy Martes 21 de Julio)
-    let trmGlobal = 3262.58;
+    // PEGA AQUÍ TU URL DE GOOGLE SCRIPT (NUEVA VERSIÓN)
+    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbyNINZ4KrY9KHPiQYj3cPw3etaQ0IyEC1_DGwPEHWweBS4SX8lN9ksYgrm06Z-btfmM/exec";
+    
+    let trmGlobal = 0;
     const nf = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     async function update() {
-      // Usamos la API de intercambio más robusta del mundo (difícil de bloquear)
-      const url = "https://open.er-api.com/v6/latest/USD";
-      
       try {
-        const response = await fetch(url + "?cb=" + Date.now());
-        if (!response.ok) throw new Error();
+        const response = await fetch(GOOGLE_URL);
         const data = await response.json();
-        
-        if (data && data.rates && data.rates.COP) {
-          trmGlobal = parseFloat(data.rates.COP);
+        if (data.trm) {
+          trmGlobal = parseFloat(data.trm);
           document.getElementById('trm-display').innerText = "$ " + nf.format(trmGlobal);
-          
-          // Actualizar fecha basada en el servidor
-          const fechaActual = new Date().toISOString().split('T')[0];
-          document.getElementById('fecha-display').innerText = "Vigencia: " + fechaActual;
-          document.getElementById('fuente').innerText = "Finanzas Online";
-          document.getElementById('hora').innerText = new Date().toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit', hour12: true});
+          document.getElementById('fecha-display').innerText = "Vigencia: " + data.fecha;
+          document.getElementById('hora').innerText = new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', hour12:true});
         }
       } catch (e) {
-        // Si el firewall bloquea, el widget NO SE ROMPE, mantiene el valor de la mañana
-        console.log("Firewall detectado. Manteniendo valor actual.");
-        document.getElementById('fuente').innerText = "SFC (Modo Protegido)";
+        document.getElementById('trm-display').innerText = "Reintentando...";
       }
     }
 
@@ -72,10 +60,8 @@
         u.value = p > 0 ? (p / trmGlobal).toFixed(2) : "";
       }
     }
-
-    // Iniciar actualización en segundo plano
     update();
-    setInterval(update, 3600000); // Reintentar cada hora
+    setInterval(update, 1800000);
   </script>
 </body>
 </html>
