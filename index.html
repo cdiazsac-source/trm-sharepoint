@@ -25,30 +25,32 @@
     <div class="calc">
       <input type="number" id="usd" placeholder="Dólares (USD)" oninput="convertir('usd')">
       <input type="text" id="cop" placeholder="Pesos (COP)" oninput="convertir('cop')">
-      <div class="footer">Fuente: SFC Oficial (Vía Google) | <span id="hora">--:--</span></div>
+      <div class="footer">Fuente: SFC Oficial | <span id="hora">--:--</span></div>
     </div>
   </div>
 
   <script>
-    // PEGA AQUÍ TU URL DE GOOGLE (LA QUE COPIASTE EN EL PASO 1)
-    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbyNINZ4KrY9KHPiQYj3cPw3etaQ0IyEC1_DGwPEHWweBS4SX8lN9ksYgrm06Z-btfmM/exec";
+    // PEGA AQUÍ TU URL DE GOOGLE (Asegúrate de poner la de la NUEVA versión)
+    const GOOGLE_URL = "https://script.google.com/macros/library/d/1AvfczrwTY4cuoSoOR9ssMbXOzmLM863ZzNiHsdRfe5qOzHQ_qnjx0rmL/3";
     
     let trmGlobal = 0;
     const nf = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-    async function update() {
-      try {
-        const response = await fetch(GOOGLE_URL);
-        const data = await response.json();
-        if (data.trm) {
-          trmGlobal = parseFloat(data.trm);
-          document.getElementById('trm-display').innerText = "$ " + nf.format(trmGlobal);
-          document.getElementById('fecha-display').innerText = "Vigencia: " + data.fecha;
-          document.getElementById('hora').innerText = new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', hour12:true});
-        }
-      } catch (e) {
-        document.getElementById('trm-display').innerText = "Error de red";
+    // Esta función se activará cuando Google responda
+    window.callbackTRM = function(data) {
+      if (data && data.trm) {
+        trmGlobal = parseFloat(data.trm);
+        document.getElementById('trm-display').innerText = "$ " + nf.format(trmGlobal);
+        document.getElementById('fecha-display').innerText = "Vigencia: " + data.fecha;
+        document.getElementById('hora').innerText = new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', hour12:true});
       }
+    };
+
+    function update() {
+      const script = document.createElement('script');
+      // Usamos el parámetro callback para saltar el Error de Red
+      script.src = GOOGLE_URL + "?callback=callbackTRM&v=" + Date.now();
+      document.body.appendChild(script);
     }
 
     function convertir(tipo) {
