@@ -19,8 +19,8 @@
   <div class="container">
     <div class="card">
       <div class="label">TRM OFICIAL COLOMBIA</div>
-      <div id="trm-display" class="value">$ 0,00</div>
-      <div id="fecha-display" class="vigencia">Sincronizando...</div>
+      <div id="trm-display" class="value">$ 3.262,58</div>
+      <div id="fecha-display" class="vigencia">Vigencia: 2026-07-21</div>
     </div>
     <div class="calc">
       <input type="number" id="usd" placeholder="Dólares (USD)" oninput="convertir('usd')">
@@ -30,13 +30,12 @@
   </div>
 
   <script>
-    // PEGA AQUÍ TU URL DE GOOGLE (Asegúrate de poner la de la NUEVA versión)
-    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbyNINZ4KrY9KHPiQYj3cPw3etaQ0IyEC1_DGwPEHWweBS4SX8lN9ksYgrm06Z-btfmM/exec";
+    // PEGA AQUÍ LA URL QUE TERMINA EN /exec
+    const GOOGLE_URL = "PEGAR_AQUI_URL_QUE_TERMINA_EN_EXEC";
     
-    let trmGlobal = 0;
+    let trmGlobal = 3262.58;
     const nf = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-    // Esta función se activará cuando Google responda
     window.callbackTRM = function(data) {
       if (data && data.trm) {
         trmGlobal = parseFloat(data.trm);
@@ -48,13 +47,11 @@
 
     function update() {
       const script = document.createElement('script');
-      // Usamos el parámetro callback para saltar el Error de Red
       script.src = GOOGLE_URL + "?callback=callbackTRM&v=" + Date.now();
       document.body.appendChild(script);
     }
 
     function convertir(tipo) {
-      if(!trmGlobal) return;
       const u = document.getElementById('usd'), c = document.getElementById('cop');
       if(tipo === 'usd') c.value = u.value > 0 ? nf.format(u.value * trmGlobal) : "";
       else {
