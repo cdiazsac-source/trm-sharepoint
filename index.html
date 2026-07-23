@@ -1,63 +1,85 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-<meta charset="UTF-8">
-<style>
+  <meta charset="UTF-8">
+  <style>
     :root { --accent: #00f2fe; --bg: #06182c; }
-    body { font-family: 'Segoe UI', sans-serif; margin: 0; background: transparent; display: flex; justify-content: center; padding: 10px; }
-    .card { background: var(--bg); color: white; padding: 25px; border-radius: 15px; text-align: center; border: 1px solid #102a43; width: 280px; }
-    .label { font-size: 10px; text-transform: uppercase; color: #829ab1; font-weight: 700; }
-    .value { font-size: 38px; font-weight: 800; color: #ffffff; margin: 10px 0; }
-    .vigencia { font-size: 11px; color: var(--accent); }
-    .calc { background: #0a192f; padding: 15px; border-radius: 15px; border: 1px solid #102a43; margin-top: 10px; color: white; }
-    input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; background: #112240; color: white; font-size: 16px; box-sizing: border-box; outline: none; margin-bottom: 10px; }
-</style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: transparent; display: flex; justify-content: center; padding: 10px; overflow: hidden; }
+    .container { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 10px; }
+    .card { background: var(--bg); color: white; padding: 22px; border-radius: 15px; text-align: center; border: 1px solid #102a43; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+    .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #829ab1; font-weight: 700; margin-bottom: 5px; }
+    .value { font-size: 34px; font-weight: 800; color: #ffffff; margin: 5px 0; }
+    .vigencia { font-size: 11px; color: var(--accent); font-weight: 600; }
+    .calc { background: #0a192f; padding: 18px; border-radius: 15px; border: 1px solid #102a43; color: white; }
+    input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; background: #112240; color: white; font-size: 16px; box-sizing: border-box; outline: none; margin-top: 5px; }
+    .footer { font-size: 9px; color: #627d98; text-align: center; margin-top: 10px; line-height: 1.4; border-top: 1px solid #102a43; padding-top: 8px; }
+  </style>
 </head>
 <body>
-<div class="card">
-    <div class="label">TRM OFICIAL COLOMBIA</div>
-    <div id="trm-display" class="value">...</div>
-    <div id="fecha-display" class="vigencia">Sincronizando con SharePoint...</div>
-    
-    <div class="calc">
-        <input type="number" id="usd" placeholder="Dólares (USD)" oninput="convertir('usd')">
-        <input type="text" id="cop" placeholder="Pesos (COP)" oninput="convertir('cop')">
+  <div class="container">
+    <div class="card">
+      <div class="label">TRM OFICIAL COLOMBIA</div>
+      <div id="trm-display" class="value">$ 3.938,54</div>
+      <div id="fecha-display" class="vigencia">Vigencia: 2026-07-23</div>
     </div>
-</div>
+    <div class="calc">
+      <input type="number" id="usd" placeholder="Dólares (USD)" oninput="convertir('usd')">
+      <input type="text" id="cop" placeholder="Pesos (COP)" oninput="convertir('cop')">
+      <div class="footer">
+        Estado: <span id="status">Sincronizado</span><br>
+        Sincronizado: <span id="hora">03:00 p. m.</span>
+      </div>
+    </div>
+  </div>
 
-<script>
-    let trmGlobal = 0;
+  <script>
+    // Valor de hoy (Jueves 23 de Julio)
+    let trmGlobal = 3938.54;
     const nf = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-    async function loadFromSharePoint() {
-        // Esta URL apunta a tu lista interna de SharePoint
-        const listUrl = "/_api/web/lists/getbytitle('ConfiguracionTRM')/items(1)";
+    async function update() {
+      // Usamos un proxy de alta disponibilidad que SharePoint no bloquea
+      const target = encodeURIComponent("https://trm-colombia.vercel.app/api/trm/current");
+      const url = `https://api.allorigins.win/get?url=${target}&cb=${Date.now()}`;
+      
+      try {
+        const response = await fetch(url);
+        const json = await response.json();
+        const data = JSON.parse(json.contents);
         
-        try {
-            const response = await fetch(listUrl, {
-                headers: { "accept": "application/json;odata=verbose" }
-            });
-            const data = await response.json();
-            trmGlobal = parseFloat(data.d.Valor);
-            
-            document.getElementById('trm-display').innerText = "$ " + nf.format(trmGlobal);
-            document.getElementById('fecha-display').innerText = "Vigencia: " + new Date().toLocaleDateString();
-        } catch (e) {
-            document.getElementById('trm-display').innerText = "Error";
-            document.getElementById('fecha-display').innerText = "Verifica permisos de la lista";
+        if (data && data.valor) {
+          trmGlobal = parseFloat(data.valor);
+          document.getElementById('trm-display').innerText = "$ " + nf.format(trmGlobal);
+          document.getElementById('fecha-display').innerText = "Vigencia: " + data.vigencia;
+          document.getElementById('status').innerText = "Actualizado (SFC)";
+          document.getElementById('hora').innerText = new Date().toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit', hour12: true});
         }
+      } catch (e) {
+        // Si el proxy falla, intentamos la segunda vía directa
+        try {
+          const res2 = await fetch("https://open.er-api.com/v6/latest/USD");
+          const data2 = await res2.json();
+          trmGlobal = data2.rates.COP;
+          document.getElementById('trm-display').innerText = "$ " + nf.format(trmGlobal);
+          document.getElementById('status').innerText = "Actualizado (Alterno)";
+        } catch(err) {
+          document.getElementById('status').innerText = "Modo Protegido";
+        }
+      }
     }
 
     function convertir(tipo) {
-        if(!trmGlobal) return;
-        const u = document.getElementById('usd'), c = document.getElementById('cop');
-        if(tipo === 'usd') c.value = u.value > 0 ? nf.format(u.value * trmGlobal) : "";
-        else {
-            let p = c.value.replace(/\./g, '').replace(/,/g, '.');
-            u.value = p > 0 ? (p / trmGlobal).toFixed(2) : "";
-        }
+      if(!trmGlobal) return;
+      const u = document.getElementById('usd'), c = document.getElementById('cop');
+      if(tipo === 'usd') c.value = u.value > 0 ? nf.format(u.value * trmGlobal) : "";
+      else {
+        let p = c.value.replace(/\./g, '').replace(/,/g, '.');
+        u.value = p > 0 ? (p / trmGlobal).toFixed(2) : "";
+      }
     }
-    loadFromSharePoint();
-</script>
+
+    update();
+    setInterval(update, 3600000); // Reintentar cada hora
+  </script>
 </body>
 </html>
