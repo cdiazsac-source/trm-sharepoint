@@ -8,50 +8,31 @@
     .container { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 10px; }
     .card { background: var(--bg); color: white; padding: 22px; border-radius: 15px; text-align: center; border: 1px solid #102a43; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
     .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #829ab1; font-weight: 700; margin-bottom: 5px; }
-    .value { font-size: 34px; font-weight: 800; color: #ffffff; margin: 5px 0; }
+    .value { font-size: 36px; font-weight: 800; color: #ffffff; margin: 5px 0; }
     .vigencia { font-size: 11px; color: var(--accent); font-weight: 600; }
     .calc { background: #0a192f; padding: 18px; border-radius: 15px; border: 1px solid #102a43; color: white; }
     input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; background: #112240; color: white; font-size: 16px; box-sizing: border-box; outline: none; margin-top: 5px; }
-    .footer { font-size: 9px; color: #627d98; text-align: center; margin-top: 10px; line-height: 1.4; }
+    .footer { font-size: 9px; color: #627d98; text-align: center; margin-top: 10px; border-top: 1px solid #102a43; padding-top: 8px; line-height: 1.4; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="card">
       <div class="label">TRM OFICIAL COLOMBIA</div>
-      <div id="trm-display" class="value">$ 3.206,86</div>
-      <div id="fecha-display" class="vigencia">Vigencia: 2026-07-23</div>
+      <div id="trm-display" class="value">$ VALOR_HTTP_1</div>
+      <div id="fecha-display" class="vigencia">Vigencia: FECHA_HTTP_1</div>
     </div>
     <div class="calc">
-      <input type="number" id="usd" placeholder="Dólares (USD)" oninput="convertir('usd')">
-      <input type="text" id="cop" placeholder="Pesos (COP)" oninput="convertir('cop')">
-      <div class="footer">
-        Estado: <span id="status">Automatizado</span><br>
-        Sincronizado: <span id="hora">03:00 p. m.</span>
-      </div>
+      <label style="font-size: 9px; color: #627d98;">DÓLARES (USD)</label>
+      <input type="number" id="usd" step="0.01" oninput="convertir('usd')">
+      <label style="font-size: 9px; color: #627d98; display:block; margin-top:10px;">PESOS (COP)</label>
+      <input type="text" id="cop" oninput="convertir('cop')">
+      <div class="footer">Sincronizado automáticamente por Microsoft</div>
     </div>
   </div>
-
   <script>
-    // ESTE VALOR SERÁ ACTUALIZADO POR EL ROBOT DE MICROSOFT CADA MAÑANA
-    let trmGlobal = 3206.86;
+    let trmGlobal = VALOR_HTTP_1;
     const nf = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-    async function update() {
-      // Intento de actualización silenciosa vía proxy para saltar el firewall
-      try {
-        const res = await fetch("https://api.allorigins.win/get?url=" + encodeURIComponent("https://trm-colombia.vercel.app/api/trm/current") + "&cb=" + Date.now());
-        const json = await res.json();
-        const data = JSON.parse(json.contents);
-        if (data && data.valor) {
-          trmGlobal = parseFloat(data.valor);
-          document.getElementById('trm-display').innerText = "$ " + nf.format(trmGlobal);
-          document.getElementById('fecha-display').innerText = "Vigencia: " + data.vigencia;
-          document.getElementById('hora').innerText = new Date().toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit', hour12: true});
-        }
-      } catch (e) { console.log("Firewall activo. Usando valor del servidor."); }
-    }
-
     function convertir(tipo) {
       if(!trmGlobal) return;
       const u = document.getElementById('usd'), c = document.getElementById('cop');
@@ -61,8 +42,6 @@
         u.value = p > 0 ? (p / trmGlobal).toFixed(2) : "";
       }
     }
-    update();
-    setInterval(update, 1800000);
   </script>
 </body>
 </html>
