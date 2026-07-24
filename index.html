@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+/<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -19,8 +19,8 @@
   <div class="container">
     <div class="card">
       <div class="label">TRM OFICIAL COLOMBIA</div>
-      <div id="trm-display" class="value">$ TRM_VALOR</div>
-      <div id="fecha-display" class="vigencia">Vigencia: TRM_FECHA</div>
+      <div id="trm-display" class="value">$ </div>
+      <div id="fecha-display" class="vigencia">Vigencia: </div>
     </div>
     <div class="calc">
       <input type="number" id="usd" placeholder="Dólares (USD)" oninput="convertir('usd')">
@@ -29,7 +29,7 @@
     </div>
   </div>
   <script>
-    let trmGlobal = TRM_VALOR;
+    let trmGlobal = ;
     const nf = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     function convertir(tipo) {
       if(!trmGlobal) return;
