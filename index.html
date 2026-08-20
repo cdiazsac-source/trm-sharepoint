@@ -4,69 +4,56 @@
   <meta charset="UTF-8">
   <style>
     body { font-family: 'Segoe UI', sans-serif; margin: 0; background: transparent; display: flex; justify-content: center; padding: 10px 0; }
-    .container { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 260px; }
-    .card { background: #06182c; color: white; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #102a43; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-    .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #829ab1; font-weight: 700; margin-bottom: 5px; }
-    .value { font-size: 32px; font-weight: 800; color: #ffffff; margin-bottom: 5px; }
-    .vigencia { font-size: 10px; color: #00f2fe; margin-bottom: 15px; }
-    .calc-box { background: #0a192f; color: white; padding: 15px; border-radius: 12px; border: 1px solid #102a43; }
-    .input-group { margin-bottom: 10px; text-align: left; }
-    .input-group label { display: block; font-size: 9px; color: #627d98; margin-bottom: 3px; text-transform: uppercase; }
-    .input-group input { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #1e293b; background: #112240; color: white; font-size: 14px; box-sizing: border-box; outline: none; }
-    .input-group input:focus { border-color: #00f2fe; }
-    .footer-info { font-size: 9px; color: #627d98; text-align: center; margin-top: 10px; border-top: 1px solid #102a43; padding-top: 8px; }
+    .container { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 10px; }
+    .card { background: #06182c; color: white; padding: 22px; border-radius: 15px; text-align: center; border: 1px solid #102a43; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+    .label { font-size: 11px; color: #829ab1; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
+    .value { font-size: 34px; font-weight: 800; color: #ffffff; margin: 5px 0; }
+    .vigencia { font-size: 11px; color: #4fd1c5; font-weight: 600; }
+    .calc { background: #0a192f; border: 1px solid #102a43; border-radius: 12px; padding: 15px; color: white; }
+    .calc label { font-size: 9px; color: #627d98; text-transform: uppercase; display: block; margin-bottom: 5px; }
+    .calc input { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #1e293b; background: #112240; color: white; box-sizing: border-box; font-size: 16px; outline: none; }
+    .footer { font-size: 8px; color: #475569; text-align: center; margin-top: 8px; border-top: 1px solid #1e293b; padding-top: 8px; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="card">
-      <div class="label">TRM HOY OFICIAL</div>
+      <div class="label">TRM Oficial Colombia</div>
       <div class="value" id="trm-display">$ 0,00</div>
       <div class="vigencia" id="fecha-display">Sincronizando...</div>
     </div>
-    <div class="calc-box">
-      <div class="input-group">
-        <label>Dólares (USD)</label>
-        <input type="number" id="usd" placeholder="0.00" oninput="convertir('usd')">
-      </div>
-      <div class="input-group">
-        <label>Pesos (COP)</label>
-        <input type="text" id="cop" placeholder="0" oninput="convertir('cop')">
-      </div>
-      <div class="footer-info">
-        Fuente: <span id="fuente">---</span><br>
-        Sincronizado: <span id="hora">--:--</span>
-      </div>
+    <div class="calc">
+      <label>Convertir Dólares (USD)</label>
+      <input type="number" id="usd" placeholder="0.00" oninput="convertir()">
+      <label>Resultado Pesos (COP)</label>
+      <input type="text" id="cop" placeholder="$ 0" readonly>
+      <div class="footer">Fuente: <span id="fuente">---</span> | Sinc: <span id="hora">--:--</span></div>
     </div>
   </div>
   <script>
-    let trmGlobal = 0;
-    function format(n) { return new Intl.NumberFormat('es-CO').format(n); }
+    let currentTRM = 0;
     function update() {
-      // Agregamos un número aleatorio al final para forzar la actualización
-      fetch("https://curly-violet-2d33.cdiaz-sac.workers.dev/?cb=" + Date.now())
+      fetch("https://curly-violet-2d33.cdiaz-sac.workers.dev/?t=" + Date.now())
         .then(r => r.json())
         .then(data => {
           if(data.trm) {
-            trmGlobal = parseFloat(data.trm);
-            document.getElementById('trm-display').innerText = "$ " + format(trmGlobal);
+            currentTRM = data.trm;
+            document.getElementById('trm-display').innerText = "$ " + currentTRM.toLocaleString('es-CO', {minimumFractionDigits:2});
             document.getElementById('fecha-display').innerText = "Vigencia: " + data.fecha;
             document.getElementById('fuente').innerText = data.fuente;
             document.getElementById('hora').innerText = data.hora;
           }
         });
     }
-    function convertir(tipo) {
-      const usdIn = document.getElementById('usd');
-      const copIn = document.getElementById('cop');
-      if (tipo === 'usd') {
-        copIn.value = usdIn.value > 0 ? format(Math.round(usdIn.value * trmGlobal)) : "";
-      } else {
-        const copPuro = copIn.value.replace(/\./g, '').replace(/,/g, '.');
-        usdIn.value = copPuro > 0 ? (copPuro / trmGlobal).toFixed(2) : "";
-      }
+    function convertir() {
+      const usd = document.getElementById('usd').value;
+      const cop = document.getElementById('cop');
+      if (usd > 0 && currentTRM > 0) {
+        cop.value = "$ " + Math.round(usd * currentTRM).toLocaleString('es-CO');
+      } else { cop.value = ""; }
     }
     update();
+    setInterval(update, 600000);
   </script>
 </body>
 </html>
