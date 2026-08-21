@@ -3,43 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <style>
-    body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: transparent; display: flex; justify-content: center; padding: 10px 0; }
-    .container { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 12px; }
-    .card-trm { background: #06182c; color: white; padding: 22px; border-radius: 12px; text-align: center; border: 1px solid #102a43; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-    .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #829ab1; font-weight: 700; margin-bottom: 8px; }
-    .value { font-size: 34px; font-weight: 800; color: #ffffff; line-height: 1; margin-bottom: 8px; }
-    .vigencia { font-size: 11px; color: #4fd1c5; font-weight: 600; padding: 4px 12px; background: rgba(79, 209, 197, 0.1); border-radius: 20px; display: inline-block; }
-    .card-calc { background: #0a192f; padding: 18px; border-radius: 12px; border: 1px solid #102a43; }
-    .input-row { margin-bottom: 12px; }
-    .input-row label { display: block; font-size: 9px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; }
-    .input-row input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #1e293b; background: #112240; color: white; font-size: 16px; box-sizing: border-box; outline: none; }
-    .input-row input:focus { border-color: #4fd1c5; }
-    .footer { font-size: 8px; color: #475569; text-align: center; margin-top: 10px; line-height: 1.4; }
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; background: transparent; display: flex; justify-content: center; padding: 10px 0; }
+    .container { width: 100%; max-width: 270px; display: flex; flex-direction: column; gap: 10px; }
+    .card { background: #06182c; color: white; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #102a43; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #829ab1; font-weight: 700; margin-bottom: 5px; }
+    .value { font-size: 32px; font-weight: 800; color: #ffffff; line-height: 1; margin-bottom: 5px; }
+    .info { font-size: 10px; color: #00f2fe; font-weight: 600; }
+    .calc-box { background: #0a192f; padding: 15px; border-radius: 12px; border: 1px solid #102a43; }
+    .input-group { margin-bottom: 10px; text-align: left; }
+    .input-group label { display: block; font-size: 9px; color: #627d98; margin-bottom: 3px; text-transform: uppercase; }
+    .input-group input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #1e293b; background: #112240; color: white; font-size: 16px; box-sizing: border-box; outline: none; }
+    .footer { font-size: 8px; color: #475569; text-align: center; margin-top: 10px; border-top: 1px solid #102a43; padding-top: 8px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="card-trm">
-      <div class="label">TRM Oficial Colombia</div>
+    <div class="card">
+      <div class="label">TRM Hoy (Wilkinson Bridge)</div>
       <div class="value" id="trm-val">$ 0,00</div>
-      <div class="vigencia" id="trm-date">Actualizando...</div>
+      <div class="info" id="trm-date">Sincronizando...</div>
     </div>
-    <div class="card-calc">
-      <div class="input-row">
+    <div class="calc-box">
+      <div class="input-group">
         <label>Dólares (USD)</label>
         <input type="number" id="usd" placeholder="0.00" oninput="convertir()">
       </div>
-      <div class="input-row">
+      <div class="input-group">
         <label>Pesos (COP)</label>
         <input type="text" id="cop" placeholder="$ 0" readonly>
       </div>
-      <div class="footer">Fuente: Superfinanciera de Colombia<br>Sincronización: <span id="trm-time">--:--</span></div>
+      <div class="footer">Fuente: WilkinsonPC Sync<br>Sinc: <span id="trm-time">--:--</span></div>
     </div>
   </div>
   <script>
     let rate = 0;
     function update() {
-      fetch("https://curly-violet-2d33.cdiaz-sac.workers.dev/?v=" + Date.now())
+      // Forzamos la actualización sin caché
+      fetch("https://curly-violet-2d33.cdiaz-sac.workers.dev/?nocache=" + Date.now())
         .then(r => r.json())
         .then(d => {
           if (d.trm) {
@@ -58,7 +58,7 @@
       } else { cop.value = ""; }
     }
     update();
-    setInterval(update, 600000);
+    setInterval(update, 600000); // Revisa cada 10 min si Wilkinson cambió el dato
   </script>
 </body>
 </html>
